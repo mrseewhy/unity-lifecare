@@ -1,0 +1,27 @@
+@import "./fonts.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+label {
+    @apply text-lg font-semibold !important;
+}
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+textarea {
+    @apply text-base font-medium !important;
+}
+
+::placeholder {
+    @apply text-base text-purple-200 !important;
+}
+input:focus,
+textarea:focus,
+select:focus {
+    @apply border border-purple-950 !important;
+}
