@@ -94,7 +94,7 @@ Route::get('/dashboard/blog/{slug}/edit', Editpost::class)->middleware(['auth'])
 Route::get('/dashboard/career/create', Createcareer::class)->middleware(['auth'])->name('createcareer');
 Route::get('/dashboard/career/all', Allcareers::class)->middleware(['auth'])->name('allcareers');
 Route::get('/dashboard/career/{slug}/edit', Editcareer::class)->middleware(['auth'])->name('editcareer');
-Route::get('/dashboard/visitors-registration/new', VisitorsRegistration::class)->middleware(['auth'])->name('visitors-registration');
+Route::get('/dashboard/visitors-registration/new', VisitorsRegistration::class)->middleware(['auth'])->name('new-visitors-registration');
 Route::get('/dashboard/visitors-registration/contacted', Contactedregistration::class)->middleware(['auth'])->name('contacted-registration');
 
 // Route::view('dashboard', 'dashboard')
