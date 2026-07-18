@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\User;
 use Livewire\Volt\Volt;
 
 test('registration screen can be rendered', function () {
@@ -21,7 +22,8 @@ test('new users can register', function () {
 
     $component->call('register');
 
-    $component->assertRedirect(route('dashboard', absolute: false));
+    $component->assertRedirect(route('home', absolute: false));
 
-    $this->assertAuthenticated();
+    $this->assertGuest();
+    $this->assertFalse(User::where('email', 'test@example.com')->first()->approved);
 });

@@ -12,7 +12,7 @@ test('login screen can be rendered', function () {
 });
 
 test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['approved' => true]);
 
     $component = Volt::test('pages.auth.login')
         ->set('form.email', $user->email)
@@ -44,7 +44,7 @@ test('users can not authenticate with invalid password', function () {
 });
 
 test('navigation menu can be rendered', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['approved' => true]);
 
     $this->actingAs($user);
 
@@ -52,7 +52,7 @@ test('navigation menu can be rendered', function () {
 
     $response
         ->assertOk()
-        ->assertSeeVolt('layout.navigation');
+        ->assertSee('Welcome '.$user->name);
 });
 
 test('users can logout', function () {

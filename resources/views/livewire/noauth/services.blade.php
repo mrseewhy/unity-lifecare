@@ -181,7 +181,7 @@
                         </div>
                     </div>
                     <!-- Card 3: Assistance with home responsibilities -->
-                    <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    {{-- <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                         <img class="w-full h-60 object-cover rounded-t-lg" src="/images/we.webp"
                             alt="Assistance with home responsibilities">
                         <div class="p-6">
@@ -196,7 +196,7 @@
                             </p>
 
                         </div>
-                    </div>
+                    </div> --}}
                 </div>
             </div>
         </div>
