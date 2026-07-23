@@ -45,8 +45,7 @@ use App\Livewire\Noauth\Thankyou;
 use App\Livewire\Noauth\Travelsupport;
 use App\Livewire\Noauth\Viewblog;
 use App\Livewire\Noauth\Viewcareer;
-use App\Mail\ClientSubmission;
-use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\RegistrationDocumentDownloadController;
 use Illuminate\Support\Facades\Route;
 
 // Route::view('/', 'welcome');
@@ -94,6 +93,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
     Route::get('/dashboard/career/{slug}/edit', Editcareer::class)->name('editcareer');
     Route::get('/dashboard/visitors-registration/new', VisitorsRegistration::class)->name('new-visitors-registration');
     Route::get('/dashboard/visitors-registration/contacted', Contactedregistration::class)->name('contacted-registration');
+    Route::get('/dashboard/visitors-registration/{submission}/document', RegistrationDocumentDownloadController::class)->name('registration-document.download');
 
     Route::middleware('admin')->group(function () {
         Route::get('/dashboard/users/create', Createuser::class)->name('createuser');
@@ -106,11 +106,6 @@ Route::middleware(['auth', 'approved'])->group(function () {
 //     ->middleware(['auth', 'verified'])
 //     ->name('dashboard');
 
-Route::get('/testroute', function () {
-    $name = 'Ogidan';
-    $data = ['name' => $name];
-    Mail::to('segunisaboy@gmail.com')->queue(new ClientSubmission($data));
-});
 Route::view('profile', 'profile')
     ->middleware(['auth', 'approved'])
     ->name('profile');

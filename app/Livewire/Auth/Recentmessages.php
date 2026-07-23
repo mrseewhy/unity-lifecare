@@ -12,7 +12,7 @@ class Recentmessages extends Component
     public $showFullMessage = false;
 
     public function confirmContact($contactId){
-        $contact = Contact::find($contactId);
+        $contact = Contact::findOrFail($contactId);
         $contact->contacted = true;
         $contact->save();
         session()->flash('message', ['type' => 'success', 'text' => 'You have read and acted on the message']);

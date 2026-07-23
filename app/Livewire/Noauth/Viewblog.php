@@ -12,7 +12,7 @@ class Viewblog extends Component
 {
     public $blog;
     public function mount($slug){
-        $this->blog = Blogpost::where('slug', $slug)->first();
+        $this->blog = Blogpost::where('slug', $slug)->firstOrFail();
     }
     public function editBlogpost($slug){
         return $this->redirect(route('editpost', ['slug' => $slug]));

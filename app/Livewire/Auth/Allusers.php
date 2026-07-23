@@ -17,7 +17,23 @@ class Allusers extends Component
     use WithoutUrlPagination;
     public function updateRole($userId, $role)
     {
+        if (! in_array($role, ['admin', 'manager'], true)) {
+            session()->flash('message', ['type' => 'error', 'text' => 'Invalid role selected.']);
+            return $this->redirect(route('allusers'), navigate:true);
+        }
+
         $user = User::findOrFail($userId);
+
+        if ($user->id === auth()->id() && $role !== 'admin') {
+            session()->flash('message', ['type' => 'error', 'text' => 'You cannot remove your own admin role.']);
+            return $this->redirect(route('allusers'), navigate:true);
+        }
+
+        if ($user->role === 'admin' && $role !== 'admin' && ! $this->hasAnotherApprovedAdmin($user->id)) {
+            session()->flash('message', ['type' => 'error', 'text' => 'At least one approved admin must remain.']);
+            return $this->redirect(route('allusers'), navigate:true);
+        }
+
         $user->update(['role' => $role]);
         session()->flash('message', ['type' => 'success', 'text' => "User's role has been updated"]);
         return $this->redirect(route('allusers'), navigate:true);
@@ -25,6 +41,17 @@ class Allusers extends Component
     public function toggleApproval($userId)
     {
         $user = User::findOrFail($userId);
+
+        if ($user->id === auth()->id() && $user->approved) {
+            session()->flash('message', ['type' => 'error', 'text' => 'You cannot disapprove yourself.']);
+            return $this->redirect(route('allusers'), navigate:true);
+        }
+
+        if ($user->role === 'admin' && $user->approved && ! $this->hasAnotherApprovedAdmin($user->id)) {
+            session()->flash('message', ['type' => 'error', 'text' => 'At least one approved admin must remain.']);
+            return $this->redirect(route('allusers'), navigate:true);
+        }
+
         $user->update(['approved' => !$user->approved]);
         session()->flash('message', ['type' => 'success', 'text' => "User's approval status has been updated"]);
         return $this->redirect(route('allusers'), navigate:true);
@@ -51,6 +78,14 @@ class Allusers extends Component
     public function editUser($id){
 
         return $this->redirect(route('edituser', ['id' => $id]), navigate: true);
+    }
+
+    private function hasAnotherApprovedAdmin(int $userId): bool
+    {
+        return User::where('role', 'admin')
+            ->where('approved', true)
+            ->whereKeyNot($userId)
+            ->exists();
     }
 
     public function render()

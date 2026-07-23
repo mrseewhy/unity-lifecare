@@ -12,7 +12,7 @@ class Navbar extends Component
 
     public function mount()
     {
-        $this->currentRoute = request()->route()->getName();
+        $this->currentRoute = request()->route()?->getName();
     }
 
     public function setActiveRoute($route)

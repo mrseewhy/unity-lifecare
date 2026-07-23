@@ -1,4 +1,4 @@
-<div>
+<div class="min-h-screen">
     {{-- If your happiness depends on money, you will never be happy with yourself. --}}
     {{-- @livewire('partials.pagehead', ['title' => $blog->title, ]) --}}
     <section>
@@ -37,7 +37,7 @@
 
                 <!-- Blog Content -->
                 <div class="text-lg leading-relaxed text-gray-800 break-all">
-                    {!! $blog->body !!}
+                    {!! \App\Support\HtmlSanitizer::sanitize($blog->body) !!}
                 </div>
 
 

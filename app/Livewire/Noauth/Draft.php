@@ -7,6 +7,8 @@ use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 
 
 #[Layout('master', ['title' => ' Unity Lifecare | Registration Draft'])]
@@ -16,6 +18,7 @@ class Draft extends Component
 {
     public $url; // The value to be copied
     public $email; // Email input field
+    public $website;
 
     public function mount()
     {
@@ -28,6 +31,8 @@ class Draft extends Component
     }
 
     public function sendemail(){
+        $this->ensureCanSendDraftEmail();
+
         $this->validate([
             'email' => ['required', 'email']
         ]);
@@ -46,6 +51,25 @@ class Draft extends Component
         return $this->redirect('/', navigate:true); // Redirect to a success page
 
 
+    }
+
+    private function ensureCanSendDraftEmail(): void
+    {
+        if (filled($this->website)) {
+            throw ValidationException::withMessages([
+                'form' => 'Unable to send this email. Please try again.',
+            ]);
+        }
+
+        $key = 'draft_email:'.request()->ip().':'.sha1((string) $this->url);
+
+        if (RateLimiter::tooManyAttempts($key, 3)) {
+            throw ValidationException::withMessages([
+                'form' => 'Too many email attempts. Please wait a few minutes and try again.',
+            ]);
+        }
+
+        RateLimiter::hit($key, 600);
     }
 
     public function render()

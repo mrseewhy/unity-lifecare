@@ -1,4 +1,4 @@
-<div>
+<div class="min-h-screen">
     {{-- In work, do what you enjoy. --}}
     @livewire('partials.pagehead', ['title' => 'Our Blog'])
 

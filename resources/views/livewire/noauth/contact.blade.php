@@ -136,46 +136,15 @@
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div x-data="{
-                            siteKey: '{{ config('services.turnstile.key') }}',
-                            turnstileId: null,
-                            initTurnstile() {
-                                // First, clean up any existing instances
-                                if (this.turnstileId !== null) {
-                                    turnstile.remove(this.turnstileId);
-                                    this.turnstileId = null;
-                                }
-                        
-                                // Clear the container
-                                const container = document.getElementById('cf-turnstile');
-                                if (container) {
-                                    container.innerHTML = '';
-                                }
-                        
-                                // Only proceed if the element exists and Turnstile is loaded
-                                if (container && typeof turnstile !== 'undefined') {
-                                    // Render new instance and store the ID
-                                    this.turnstileId = turnstile.render('#cf-turnstile', {
-                                        sitekey: this.siteKey,
-                                        callback: (token) => {
-                                            @this.set('captcha', token);
-                                        }
-                                    });
-                                }
-                            }
-                        }" x-init="// Initial load
-                        initTurnstile();
-                        
-                        // Setup listener for Livewire navigation
-                        document.addEventListener('livewire:navigated', () => {
-                            // Give DOM time to update after navigation
-                            setTimeout(() => initTurnstile(), 300);
-                        });">
-                            <div id="cf-turnstile"></div>
-                            @error('captcha')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                        <div class="hidden" aria-hidden="true">
+                            <label for="contact-website">Website</label>
+                            <input id="contact-website" type="text" wire:model="website" tabindex="-1"
+                                autocomplete="off">
                         </div>
+
+                        @error('form')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
 
                         <button type="submit"
                             class="w-full bg-purple-900 hover:bg-purple-700 text-white font-head py-4 px-6 rounded-lg transition duration-200 flex items-center justify-center space-x-2"

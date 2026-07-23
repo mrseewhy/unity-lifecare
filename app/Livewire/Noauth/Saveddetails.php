@@ -8,18 +8,23 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use App\Models\SubmittedFormData;
+use App\Support\ReferralDocument;
+use App\Support\ReferralValidationRules;
 use Illuminate\Support\Facades\Session;
 use App\Mail\AdminSubmission;
 use App\Mail\ClientSubmission;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Validation\Rule;
-use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
+use Livewire\WithFileUploads;
 
 
 #[Layout('master', ['title' => ' Unity Lifecare | Saved Details'])]
 
 class Saveddetails extends Component
 {
+    use WithFileUploads;
+
     // public $formData;
 
     public $currentStep;
@@ -49,7 +54,7 @@ class Saveddetails extends Component
     // public $reference_number, $medicare_number, $expiry_date, $doctor_name, $membership_number, $doctors_phone_number, $private_healthcare_provider, $doctors_address, $ndis_number, $ndis_date, $ndis_name, $ndis_email, $comment, $preferred_name, $religious_requirements, $cultural_requirements, $communication_device, $physical_assistance, $other_considerations;
 
     // //Step 6
-    // public $captcha, $planned_achievements, $immediate_planned_achievements, $six_months_planned_achievements, $next_year_planned_achievements, $agree, $signature, $name_of_person_signing, $email_of_person_signing,  $relationship_to_the_participant, $date_of_signature;
+    // public $planned_achievements, $immediate_planned_achievements, $six_months_planned_achievements, $next_year_planned_achievements, $agree, $signature, $name_of_person_signing, $email_of_person_signing,  $relationship_to_the_participant, $date_of_signature;
 
 
     //Step 1
@@ -71,20 +76,28 @@ class Saveddetails extends Component
 
 
     //Step 5
-    public $medicare_number, $expiry_date, $reference_number, $membership_number, $private_healthcare_provider,   $doctor_name,  $doctors_phone_number, $doctors_address, $ndis_number, $ndis_start_date, $ndis_end_date, $ndis_funding, $type_ndis_funding, $plan_managed_name, $plan_managed_email,  $plan_managed_phone, $ndis_funding_others_details, $additional_comments;
+    public $medicare_number, $expiry_date, $reference_number, $membership_number, $private_healthcare_provider,   $doctor_name,  $doctors_phone_number, $doctors_address, $ndis_number, $ndis_start_date, $ndis_end_date, $ndis_funding, $type_ndis_funding, $plan_managed_name, $plan_managed_email,  $plan_managed_phone, $ndis_funding_others_details, $supporting_document, $additional_comments;
 
     //Step 6
-    public  $planned_achievements, $immediate_planned_achievements, $six_months_planned_achievements, $next_year_planned_achievements, $agree, $initials, $name_of_person_signing, $email_of_person_signing,  $relationship_to_the_participant, $date_of_signature, $captcha;
+    public  $planned_achievements, $immediate_planned_achievements, $six_months_planned_achievements, $next_year_planned_achievements, $agree, $initials, $name_of_person_signing, $email_of_person_signing,  $relationship_to_the_participant, $date_of_signature, $website;
+
+    private array $storedDocumentMetadata = [];
 
 
     public function mount($uuid)
     {
-        $this->formData = FormDraft::where('uuid', $uuid)->first()->form_data;
-        $this->currentStep = FormDraft::where('uuid', $uuid)->first()->current_step;
-        $this->maxStep = FormDraft::where('uuid', $uuid)->first()->max_step;
+        $draft = FormDraft::where('uuid', $uuid)->first();
+
+        abort_unless($draft, 404);
+        abort_if($draft->expires_at->isPast(), 410, 'This draft link has expired.');
+
+        $this->formData = $draft->form_data;
+        $this->currentStep = $draft->current_step;
+        $this->maxStep = $draft->max_step;
         $this->uuid = $uuid;
-        $this->draft = FormDraft::where('uuid', $uuid)->first();
+        $this->draft = $draft;
         $this->date_of_signature = Carbon::now()->toDateString();
+        session()->put("saved_details_form_started_at_{$uuid}", now()->timestamp);
         // dd(($this->formData));
 
         if (!empty($this->formData)) {
@@ -219,307 +232,22 @@ class Saveddetails extends Component
         Session::put('formData', $this->formData);
         Session::put('currentStep', $this->currentStep);
     }
-    // private function validateStep()
-    // {
-    //     if ($this->currentStep === 1) {
-
-    //         $validationRulesForStep1 = [
-    //             'participants_name' => 'required|min:2|string',
-    //             'DOB' => 'nullable|date|before:today',
-    //             'gender' => 'required|string|in:male,female',
-    //             'NDIS_Number' => 'nullable|string|max:20',
-    //             'home_phone' => 'nullable|string',
-    //             'mobile_phone' => 'nullable|string',
-    //             'email' => 'required|email',
-    //             'language_spoken' => 'nullable|string',
-    //             'interpreter_required' => 'nullable|in:yes,no',
-    //             'residential_address' => 'required|string',
-    //             'postal_address' => 'nullable|string',
-    //             'guardianship_in_place' => 'nullable|in:yes,no',
-    //             'behaviour_management_plan_in_place' => 'nullable|in:yes,no',
-
-    //         ];
-
-    //         $validatedDataForStep1 = $this->validate($validationRulesForStep1);
-
-    //         if ($validatedDataForStep1) {
-    //             $this->formData = array_merge($this->formData, $validatedDataForStep1);
-    //         }
-    //     } elseif ($this->currentStep === 2) {
-
-
-    //         $validationRulesForStep2 = [
-    //             'guardian_1_name' => 'required|string|min:2',
-    //             'guardian_1_as_primary_carer' => 'nullable|in:yes,no',
-    //             'participant_lives_with_guardian_1' => 'nullable|in:yes,no',
-    //             'guardian_1_as_emergency_contact' => 'nullable|in:yes,no',
-    //             'guardian_1_relationship_to_participant' => 'nullable|string|min:2|in:parent,guardian,caregiver,other',
-    //             'guardian_1_residential_address' => 'required|string|min:2,',
-    //             'guardian_1_postal_address' => 'nullable|string|min:2,',
-    //             'guardian_1_home_phone' => 'nullable|string',
-    //             'guardian_1_mobile_phone' => 'nullable|string',
-    //             'guardian_1_email' => 'nullable|email',
-
-    //             'guardian_2_name' => 'nullable|string|min:2',
-    //             'guardian_2_as_primary_carer' => 'nullable|in:yes,no',
-    //             'participant_lives_with_guardian_2' => 'nullable|in:yes,no',
-    //             'guardian_2_as_emergency_contact' => 'nullable|in:yes,no',
-    //             'guardian_2_relationship_to_participant' => 'nullable|string|min:2|in:parent,guardian,caregiver,other',
-    //             'guardian_2_residential_address' => 'nullable|string|min:2,',
-    //             'guardian_2_postal_address' => 'nullable|string|min:2,',
-    //             'guardian_2_home_phone' => 'nullable|string',
-    //             'guardian_2_mobile_phone' => 'nullable|string',
-    //             'guardian_2_email' => 'nullable|email',
-
-    //         ];
-
-
-    //         $validatedDataForStep2 = $this->validate($validationRulesForStep2);
-
-    //         if ($validatedDataForStep2) {
-    //             $this->formData = array_merge($this->formData, $validatedDataForStep2);
-    //         }
-    //     } elseif ($this->currentStep === 3) {
-    //         $validationRulesForStep3 = [
-    //             'medical_conditions' => 'nullable|string',
-    //             'behaviour_support_plan_collected' => 'nullable|in:yes,no',
-    //             'behaviour_support_plan_ndis' => 'nullable|in:yes,no',
-
-    //         ];
-
-    //         $validatedDataForStep3 = $this->validate($validationRulesForStep3);
-
-    //         if ($validatedDataForStep3) {
-    //             $this->formData = array_merge($this->formData, $validatedDataForStep3);
-    //         }
-    //     } elseif ($this->currentStep === 4) {
-    //         $validationRulesForStep4 = [
-    //             'other_services_provider_1_name' => 'nullable|string',
-    //             'other_services_provider_1_address' => 'nullable|string',
-    //             'other_services_provider_1_phone' => 'nullable|string',
-    //             'other_services_provider_1_email' => 'nullable|email',
-    //             'other_services_provider_1_frequency_of_use' => 'nullable|string',
-    //             'other_services_provider_2_name' => 'nullable|string',
-    //             'other_services_provider_2_address' => 'nullable|string',
-    //             'other_services_provider_2_phone' => 'nullable|string',
-    //             'other_services_provider_2_email' => 'nullable|email',
-    //             'other_services_provider_2_frequency_of_use' => 'nullable|string',
-
-    //         ];
-    //         $validatedDataForStep4 = $this->validate($validationRulesForStep4);
-
-    //         if ($validatedDataForStep4) {
-    //             $this->formData = array_merge($this->formData, $validatedDataForStep4);
-    //         }
-    //     } elseif ($this->currentStep === 5) {
-
-    //         $validationRulesForStep5 = [
-    //             'medicare_number' => 'nullable|string',
-    //             'expiry_date' => 'nullable|date',
-    //             'reference_number' => 'nullable|string',
-    //             'membership_number' => 'nullable|string',
-    //             'private_healthcare_provider' => 'nullable|string',
-    //             'doctor_name' => 'nullable|string',
-    //             'doctors_phone_number' => 'nullable|string',
-    //             'doctors_address' => 'nullable|string',
-    //             'ndis_number' => 'nullable|string',
-    //             'ndis_date' => 'nullable|date',
-    //             'ndis_name' => 'nullable|string',
-    //             'ndis_email' => 'nullable|email',
-    //             'comment' => 'nullable|string',
-    //             'preferred_name' => 'nullable|string',
-    //             'religious_requirements' => 'nullable|string',
-    //             'cultural_requirements' => 'nullable|string',
-    //             'communication_device' => 'nullable|string',
-    //             'physical_assistance' => 'nullable|string',
-    //             'other_considerations' => 'nullable|string',
-    //         ];
-    //         $validatedDataForStep5 = $this->validate($validationRulesForStep5);
-    //         if ($validatedDataForStep5) {
-    //             $this->formData = array_merge($this->formData, $validatedDataForStep5);
-    //         }
-    //     } elseif ($this->currentStep === 6) {
-
-    //         $validationRulesForStep6 = [
-    //             'planned_achievements' => 'nullable|string',
-    //             'immediate_planned_achievements' => 'nullable|string',
-    //             'six_months_planned_achievements' => 'nullable|string',
-    //             'next_year_planned_achievements' => 'nullable|string',
-    //             'agree' => 'accepted',
-    //             'signature' => 'required|string|min:3',
-    //             'name_of_person_signing' => 'required|string|min:3',
-    //             'email_of_person_signing' => 'required|email',
-    //             'relationship_to_the_participant' => 'nullable|string',
-    //             'date_of_signature' => 'nullable|date',
-    //             'captcha' => 'required|turnstile '
-    //         ];
-    //         $validatedDataForStep6 = $this->validate($validationRulesForStep6);
-    //         if ($validatedDataForStep6) {
-    //             $this->formData = array_merge($this->formData, $validatedDataForStep6);
-    //         }
-    //     }
-    // }
-
-
     private function validateStep()
     {
-        if ($this->currentStep === 1) {
+        $validatedData = $this->validate(ReferralValidationRules::step((int) $this->currentStep));
+        $this->storeSupportingDocumentIfUploaded();
+        unset($validatedData['supporting_document']);
 
-            $validationRulesForStep1 = [
-                'participants_name' => 'required|min:2|string',
-                'DOB' => 'nullable|date|before:today',
-                'gender' => 'required|string|in:male,female,others',
-                'email' => 'required|email',
-                'home_phone' => 'nullable|string',
-                'mobile_phone' => 'nullable|string',
-                'preferred_name' => 'nullable|string',
-                'religious_requirements' => 'nullable|string',
-                'cultural_requirements' => 'nullable|string',
-                'communication_device' => 'nullable|string',
-                'physical_assistance' => 'nullable|string',
-                'other_considerations' => 'nullable|string',
-                'emergency_email' => 'nullable|email',
-                'emergency_phone' => 'nullable|string',
-                'language_spoken' => 'nullable|string',
-                'interpreter_required' => 'nullable|in:yes,no',
-                'residential_address' => 'required|string',
-                'postal_address' => 'nullable|string',
-
-
-
-            ];
-
-            $validatedDataForStep1 = $this->validate($validationRulesForStep1);
-
-            if ($validatedDataForStep1) {
-                $this->formData = array_merge($validatedDataForStep1, $this->formData);
-            }
-        } elseif ($this->currentStep === 2) {
-
-
-            $validationRulesForStep2 = [
-                'guardianship_in_place' => 'required|in:yes,no',
-
-                'guardian_1_name' => 'nullable|string|min:2',
-                'guardian_1_relationship_to_participant' => 'nullable|string|min:2|in:parent,guardian,caregiver,other',
-                'guardian_1_as_primary_carer' => 'nullable|in:yes,no',
-                'participant_lives_with_guardian_1' => 'nullable|in:yes,no',
-                'guardian_1_as_emergency_contact' => 'nullable|in:yes,no',
-                'guardian_1_residential_address' => 'nullable|string|min:2,',
-                'guardian_1_postal_address' => 'nullable|string|min:2,',
-                'guardian_1_home_phone' => 'nullable|string',
-                'guardian_1_mobile_phone' => 'nullable|string',
-                'guardian_1_email' => 'nullable|email',
-
-                'guardian_2_name' => 'nullable|string|min:2',
-                'guardian_2_as_primary_carer' => 'nullable|in:yes,no',
-                'participant_lives_with_guardian_2' => 'nullable|in:yes,no',
-                'guardian_2_as_emergency_contact' => 'nullable|in:yes,no',
-                'guardian_2_relationship_to_participant' => 'nullable|string|min:2|in:parent,guardian,caregiver,other',
-                'guardian_2_residential_address' => 'nullable|string|min:2,',
-                'guardian_2_postal_address' => 'nullable|string|min:2,',
-                'guardian_2_home_phone' => 'nullable|string',
-                'guardian_2_mobile_phone' => 'nullable|string',
-                'guardian_2_email' => 'nullable|email',
-
-            ];
-
-
-            $validatedDataForStep2 = $this->validate($validationRulesForStep2);
-
-            if ($validatedDataForStep2) {
-                $this->formData = array_merge($validatedDataForStep2, $this->formData);
-            }
-        } elseif ($this->currentStep === 3) {
-            $validationRulesForStep3 = [
-                'behaviour_management_plan_in_place' => 'required|in:yes,no',
-                'medical_conditions' => 'nullable|string',
-                'behaviour_support_plan_collected' => 'nullable|in:yes,no',
-                'behaviour_support_plan_ndis' => 'nullable|in:yes,no',
-
-            ];
-
-            $validatedDataForStep3 = $this->validate($validationRulesForStep3);
-
-            if ($validatedDataForStep3) {
-                $this->formData = array_merge($validatedDataForStep3, $this->formData);
-            }
-        } elseif ($this->currentStep === 4) {
-            $validationRulesForStep4 = [
-                'other_support' => 'required|in:yes,no',
-
-                'other_services_provider_1_name' => 'nullable|string',
-                'other_services_provider_1_address' => 'nullable|string',
-                'other_services_provider_1_phone' => 'nullable|string',
-                'other_services_provider_1_email' => 'nullable|email',
-                'other_services_provider_1_frequency_of_use' => 'nullable|string',
-
-                'other_services_provider_2_name' => 'nullable|string',
-                'other_services_provider_2_address' => 'nullable|string',
-                'other_services_provider_2_phone' => 'nullable|string',
-                'other_services_provider_2_email' => 'nullable|email',
-                'other_services_provider_2_frequency_of_use' => 'nullable|string',
-
-            ];
-            $validatedDataForStep4 = $this->validate($validationRulesForStep4);
-
-            if ($validatedDataForStep4) {
-                $this->formData = array_merge($validatedDataForStep4, $this->formData);
-            }
-        } elseif ($this->currentStep === 5) {
-
-            $validationRulesForStep5 = [
-                'medicare_number' => 'nullable|string',
-                'expiry_date' => 'nullable|date',
-                'reference_number' => 'nullable|string',
-                'membership_number' => 'nullable|string',
-                'private_healthcare_provider' => 'nullable|string',
-                'doctor_name' => 'nullable|string',
-                'doctors_phone_number' => 'nullable|string',
-                'doctors_address' => 'nullable|string',
-                'ndis_number' => 'nullable|string',
-                'ndis_end_date' => 'nullable|date',
-                'ndis_start_date' => 'nullable|date',
-
-                'ndis_funding' => 'required|in:yes,no',
-                'type_ndis_funding' => 'required_if:ndis_funding,yes|nullable|in:planned_managed,ndis_managed,self_managed,others',
-                'plan_managed_name' => 'nullable|string',
-                'plan_managed_email' => 'nullable|email',
-                'plan_managed_phone' => 'nullable|string',
-                'ndis_funding_others_details' => 'nullable|string',
-                'additional_comments' => 'nullable|string'
-
-
-            ];
-            $validatedDataForStep5 = $this->validate($validationRulesForStep5);
-            if ($validatedDataForStep5) {
-                $this->formData = array_merge($validatedDataForStep5, $this->formData);
-            }
-        } elseif ($this->currentStep === 6) {
-
-            $validationRulesForStep6 = [
-                'planned_achievements' => 'nullable|string',
-                'immediate_planned_achievements' => 'nullable|string',
-                'six_months_planned_achievements' => 'nullable|string',
-                'next_year_planned_achievements' => 'nullable|string',
-                'agree' => 'accepted',
-                'initials' => 'required|string|min:1',
-                'name_of_person_signing' => 'required|string|min:3',
-                'email_of_person_signing' => 'required|email',
-                'relationship_to_the_participant' => 'nullable|string',
-                'date_of_signature' => 'nullable|date',
-                'captcha' => 'nullable|turnstile '
-            ];
-            $validatedDataForStep6 = $this->validate($validationRulesForStep6);
-            if ($validatedDataForStep6) {
-                $this->formData = array_merge($validatedDataForStep6, $this->formData);
-            }
+        if ($validatedData) {
+            $this->formData = array_merge($validatedData, $this->formDataWithoutDocumentMetadata(), $this->trustedDocumentMetadata());
         }
     }
 
 
     public function saveProgress()
     {
+        $this->ensureIsHuman('saved_details_draft_save', "saved_details_form_started_at_{$this->uuid}");
+
         if ($this->currentStep === 1) {
 
             $currentStepData = [
@@ -605,6 +333,8 @@ class Saveddetails extends Component
             // Merge with existing form data to keep previous steps' data
             $this->formData = array_merge($this->formData, $currentStepData);
         } elseif ($this->currentStep === 5) {
+            $this->storeSupportingDocumentIfUploaded();
+
             $currentStepData = [
                 'medicare_number' => $this->medicare_number ?? null,
                 'expiry_date' => $this->expiry_date ?? null,
@@ -624,6 +354,7 @@ class Saveddetails extends Component
                 'plan_managed_email' => $this->plan_managed_email ?? null,
                 'plan_managed_phone' => $this->plan_managed_phone ?? null,
                 'ndis_funding_others_details' => $this->ndis_funding_others_details ?? null,
+                ...$this->trustedDocumentMetadata(),
                 'additional_comments' => $this->additional_comments ?? null
 
             ];
@@ -653,6 +384,8 @@ class Saveddetails extends Component
         // Session::put('maxStep', $this->maxStep);
         // Session::put('currentStep', $this->currentStep);
         // dd(session()->get('formData'));
+        $this->formData = array_merge($this->formDataWithoutDocumentMetadata(), $this->trustedDocumentMetadata());
+
         $this->draft->form_data = $this->formData;
         $this->draft->max_step = $this->maxStep;
         $this->draft->current_step = $this->currentStep;
@@ -669,7 +402,8 @@ class Saveddetails extends Component
     //Submit form to database
     public function submit()
     {
-        $this->validateStep();
+        $this->ensureIsHuman('saved_details_form', "saved_details_form_started_at_{$this->uuid}");
+        $this->validateFinalForm();
 
         SubmittedFormData::create([
             'form_data' => $this->formData,
@@ -682,12 +416,89 @@ class Saveddetails extends Component
         ];
         Mail::to($this->email_of_person_signing)->queue(new ClientSubmission($data));
         Mail::to('admin@unitylifecare.com.au')->queue(new AdminSubmission($data));
+        $this->draft?->delete();
         $this->dispatch('messageReceived'); // Notify the unread count component
         $this->formData = []; // Clear form data after submission
         Session::forget(['formData', 'maxStep', 'currentStep']); // Clear session after submission
         session()->flash('message', ['type' => 'success', 'text' => 'Form Completed, Thank you!']);
 
         return $this->redirect('/thank-you', navigate: true); // Redirect to a success page
+    }
+
+    private function validateFinalForm(): void
+    {
+        $this->currentStep = 6;
+
+        $validatedData = $this->validate(ReferralValidationRules::all());
+        $this->storeSupportingDocumentIfUploaded();
+        unset($validatedData['supporting_document']);
+
+        $this->formData = array_merge($this->formDataWithoutDocumentMetadata(), $validatedData, $this->trustedDocumentMetadata());
+    }
+
+    public function hasSupportingDocument(): bool
+    {
+        return ReferralDocument::hasDocument($this->formData);
+    }
+
+    public function supportingDocumentName(): ?string
+    {
+        return ReferralDocument::originalName($this->formData);
+    }
+
+    private function storeSupportingDocumentIfUploaded(): void
+    {
+        if (! $this->supporting_document) {
+            return;
+        }
+
+        $this->storedDocumentMetadata = ReferralDocument::store($this->supporting_document, $this->trustedDocumentMetadata()[ReferralDocument::PATH_KEY] ?? null);
+
+        $this->formData = array_merge($this->formDataWithoutDocumentMetadata(), $this->storedDocumentMetadata);
+
+        $this->supporting_document = null;
+    }
+
+    private function trustedDocumentMetadata(): array
+    {
+        if ($this->storedDocumentMetadata !== []) {
+            return $this->storedDocumentMetadata;
+        }
+
+        return array_intersect_key(
+            $this->draft?->fresh()->form_data ?? [],
+            array_flip(ReferralDocument::metadataKeys()),
+        );
+    }
+
+    private function formDataWithoutDocumentMetadata(): array
+    {
+        return array_diff_key($this->formData, array_flip(ReferralDocument::metadataKeys()));
+    }
+
+    private function ensureIsHuman(string $action, string $startedAtKey): void
+    {
+        if (filled($this->website)) {
+            throw ValidationException::withMessages([
+                'form' => 'Unable to submit this form. Please try again.',
+            ]);
+        }
+
+        $key = $action.':'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            throw ValidationException::withMessages([
+                'form' => 'Too many attempts. Please wait a few minutes and try again.',
+            ]);
+        }
+
+        RateLimiter::hit($key, 600);
+
+        if (now()->timestamp - (int) session($startedAtKey, 0) < 2) {
+            throw ValidationException::withMessages([
+                'form' => 'Please wait a moment and try again.',
+            ]);
+        }
     }
 
     public function render()

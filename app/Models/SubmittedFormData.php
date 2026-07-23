@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedArray;
 use Illuminate\Database\Eloquent\Model;
 
 class SubmittedFormData extends Model
@@ -10,6 +11,6 @@ class SubmittedFormData extends Model
     protected $fillable = ['form_data', 'contacted', 'is_read'];
 
     protected $casts = [
-        'form_data' => 'array',
+        'form_data' => EncryptedArray::class,
     ];
 }

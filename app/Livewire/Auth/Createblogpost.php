@@ -4,7 +4,6 @@ namespace App\Livewire\Auth;
 
 use Livewire\Component;
 use App\Models\Blogpost;
-use Illuminate\Support\Str;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Layout;
 
@@ -28,9 +27,8 @@ class Createblogpost extends Component
 
         $imagePath = $this->featured_image ? $this->featured_image->store('blog_images', 'public') : null;
 
-        Blogpost::create([
+        Blogpost::createWithUniqueSlug([
             'title' => $this->title,
-            'slug' => Str::slug($this->title),
             'body' => $this->body,
             'user_id' => auth()->id(), // Assuming Authenticated user is the owner of the blog post. Replace with your actual logic.  // This method creates a new Blogpost model instance, populates it with the validated data, and saves it to the database.  // The Blogpost model is assumed to have the necessary fields (title, slug, body, featured_image, and user_id).  // The "auth()->id()" method returns the authenticated user
             'featured_image' => $imagePath,

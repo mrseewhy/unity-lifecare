@@ -735,13 +735,6 @@
                     </div>
                 </div>
                 
-                <div wire:ignore>
-                <x-turnstile wire:model="captcha"/>
-            </div>
-            @error('captcha')
-                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-                
             </div> --}}
 
 
@@ -1679,6 +1672,31 @@
                     </div>
                     <div>
 
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                            <div class="md:col-span-2">
+                                <label class="block font-medium font-head mb-2">Upload supporting NDIS or care document</label>
+                                <input type="file" wire:model="supporting_document" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                    class="w-full border border-purple-300 p-2 rounded font-body text-sm bg-white">
+                                <p class="mt-2 text-xs text-purple-700">Optional. Accepted formats: PDF, DOC, DOCX. Maximum size: 5 MB.</p>
+                                <div wire:loading wire:target="supporting_document" class="mt-2 text-sm text-purple-700">Uploading document...</div>
+                                @error('supporting_document')
+                                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            <div class="rounded-lg border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900">
+                                <p class="font-head font-bold mb-2">Document status</p>
+                                @if ($supporting_document)
+                                    <p class="text-green-700 font-semibold">Ready to attach</p>
+                                    <p class="break-all">{{ $supporting_document->getClientOriginalName() }}</p>
+                                @elseif ($this->hasSupportingDocument())
+                                    <p class="text-green-700 font-semibold">Document uploaded</p>
+                                    <p class="break-all">{{ $this->supportingDocumentName() }}</p>
+                                @else
+                                    <p>No document uploaded yet.</p>
+                                @endif
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 gap-12 mb-10">
                             <div>
                                 <label class="block font-medium font-head mb-2">Additional comments
@@ -1808,46 +1826,14 @@
                     </div>
                 </div>
 
-                <div x-data="{
-                    siteKey: '{{ config('services.turnstile.key') }}',
-                    turnstileId: null,
-                    initTurnstile() {
-                        // First, clean up any existing instances
-                        if (this.turnstileId !== null) {
-                            turnstile.remove(this.turnstileId);
-                            this.turnstileId = null;
-                        }
-                
-                        // Clear the container
-                        const container = document.getElementById('cf-turnstile');
-                        if (container) {
-                            container.innerHTML = '';
-                        }
-                
-                        // Only proceed if the element exists and Turnstile is loaded
-                        if (container && typeof turnstile !== 'undefined') {
-                            // Render new instance and store the ID
-                            this.turnstileId = turnstile.render('#cf-turnstile', {
-                                sitekey: this.siteKey,
-                                callback: (token) => {
-                                    @this.set('captcha', token);
-                                }
-                            });
-                        }
-                    }
-                }" x-init="// Initial load
-                initTurnstile();
-                
-                // Setup listener for Livewire navigation
-                document.addEventListener('livewire:navigated', () => {
-                    // Give DOM time to update after navigation
-                    setTimeout(() => initTurnstile(), 300);
-                });">
-                    <div id="cf-turnstile"></div>
-                    @error('captcha')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                <div class="hidden" aria-hidden="true">
+                    <label for="saved-details-website">Website</label>
+                    <input id="saved-details-website" type="text" wire:model="website" tabindex="-1" autocomplete="off">
                 </div>
+
+                @error('form')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
 
 
             </div>

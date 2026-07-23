@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedArray;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -19,7 +20,7 @@ class FormDraft extends Model
     ];
 
     protected $casts = [
-        'form_data' => 'array',
+        'form_data' => EncryptedArray::class,
         'expires_at' => 'datetime'
     ];
 }

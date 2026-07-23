@@ -244,6 +244,15 @@
                                         </p>
                                         <p>Plan Managers Phone<br>{{ $reg->form_data['$plan_managed_phone'] ?? 'N/A' }}
                                         </p>
+                                        <p class="col-span-4">Supporting Document:<br>
+                                            @if (!empty($reg->form_data['supporting_document_path']))
+                                                <a href="{{ route('registration-document.download', $reg) }}" class="inline-block mt-1 rounded bg-purple-200 px-3 py-1 text-purple-950 hover:bg-purple-100">
+                                                    Download {{ $reg->form_data['supporting_document_original_name'] ?? 'document' }}
+                                                </a>
+                                            @else
+                                                N/A
+                                            @endif
+                                        </p>
                                         <p class="col-span-4">If you select Other, Details
                                             Here:<br>{{ $reg->form_data['$plan_managed_phone'] ?? 'N/A' }}
                                         </p>

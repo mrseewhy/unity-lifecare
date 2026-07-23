@@ -4,7 +4,6 @@ namespace App\Livewire\Auth;
 
 use Livewire\Component;
 use App\Models\Blogpost;
-use Illuminate\Support\Str;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Storage;
@@ -36,7 +35,6 @@ class Editpost extends Component
         // Update BlogPost
         $this->blogpost->title = $this->title;
         $this->blogpost->body = $this->body;
-        $this->blogpost->slug = Str::slug($this->title);
 
         // Handle Image Upload
         if ($this->new_featured_image) {
@@ -50,7 +48,7 @@ class Editpost extends Component
             $this->blogpost->featured_image = $path;
         }
 
-        $this->blogpost->save();
+        $this->blogpost->saveWithUniqueSlug();
 
         $newUrl = (str_contains($this->previousUrl, 'dashboard'))
         ? '/dashboard/blog/all'

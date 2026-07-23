@@ -1,4 +1,4 @@
-<div>
+<div class="min-h-screen">
     {{-- Because she competes with no one, no one can compete with her. --}}
     {{-- @livewire('partials.pagehead', ['title' => 'View Career']) --}}
 
@@ -38,7 +38,7 @@
 
                 <!-- Blog Content -->
                 <div class="text-lg leading-relaxed text-gray-800 break-all">
-                    {!! $career->body !!}
+                    {!! \App\Support\HtmlSanitizer::sanitize($career->body) !!}
                 </div>
 
 

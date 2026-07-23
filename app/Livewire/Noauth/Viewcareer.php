@@ -12,7 +12,7 @@ class Viewcareer extends Component
 {
     public $career;
     public function mount($slug){
-        $this->career = Career::where('slug', $slug)->first();
+        $this->career = Career::where('slug', $slug)->firstOrFail();
     }
     public function editCareer($slug){
         return $this->redirect(route('editcareer', ['slug' => $slug]));

@@ -68,6 +68,8 @@
                     class="w-full sm:w-auto flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
                 >
 
+                <input type="text" wire:model="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+
 
 
                 <!-- Send Button -->
@@ -80,6 +82,9 @@
                 @if($errors->has('email'))
                     <span class="text-red-500 text-sm">{{ $errors->first('email') }}</span>
                 @endif
+                @error('form')
+                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                @enderror
             </div>
         </div>
     </div>
@@ -88,6 +93,5 @@
     </div>
 
 </div>
-
 
 

@@ -4,7 +4,6 @@ namespace App\Livewire\Auth;
 
 use App\Models\Career;
 use Livewire\Component;
-use Illuminate\Support\Str;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Storage;
@@ -35,7 +34,6 @@ class Editcareer extends Component
         // Update BlogPost
         $this->career->title = $this->title;
         $this->career->body = $this->body;
-        $this->career->slug = Str::slug($this->title);
 
         // Handle Image Upload
         if ($this->new_featured_image) {
@@ -49,7 +47,7 @@ class Editcareer extends Component
             $this->career->featured_image = $path;
         }
 
-        $this->career->save();
+        $this->career->saveWithUniqueSlug();
 
         $newUrl = (str_contains($this->previousUrl, 'dashboard'))
         ? '/dashboard/career/all'

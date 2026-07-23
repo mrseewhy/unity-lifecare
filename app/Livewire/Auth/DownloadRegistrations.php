@@ -3,7 +3,7 @@
 namespace App\Livewire\Auth;
 
 use Livewire\Component;
-use Illuminate\Support\Facades\DB;
+use App\Models\SubmittedFormData;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DownloadRegistrations extends Component
@@ -48,8 +48,8 @@ class DownloadRegistrations extends Component
             'year' => 'required|numeric|min:' . min($this->years) . '|max:' . max($this->years),
         ]);
 
-        // Fetch data from the database based on year (and month if provided)
-        $query = DB::table('submitted_form_data') // Replace with your table name
+        // Use the model so encrypted form_data is decrypted by its cast.
+        $query = SubmittedFormData::query()
             ->whereYear('created_at', $this->year);
 
         // Add month filter if a month is selected
@@ -57,13 +57,16 @@ class DownloadRegistrations extends Component
             $query->whereMonth('created_at', $this->month);
         }
 
-        // Fetch the data and decode the JSON column
+        // Fetch the data and keep form_data as the decrypted array from the model cast.
         $this->data = $query->get()->map(function ($item) {
-            // Convert stdClass to array
-            $itemArray = (array) $item;
-            // Decode JSON data
-            $itemArray['form_data'] = json_decode($itemArray['form_data'], true);
-            return $itemArray;
+            return [
+                'id' => $item->id,
+                'contacted' => $item->contacted,
+                'is_read' => $item->is_read,
+                'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at,
+                'form_data' => $item->form_data,
+            ];
         })->toArray();
 
 
@@ -188,7 +191,6 @@ class DownloadRegistrations extends Component
             'email_of_person_signing' => 'Email of Person Signing',
             'relationship_to_the_participant' => 'Relationship to the Participant',
             'date_of_signature' => 'Date of Signature',
-            'captcha' => 'Captcha Code'
         ];
 
 
@@ -221,7 +223,7 @@ class DownloadRegistrations extends Component
                     $rowData[] = $row['form_data'][$key] ?? ''; // default to empty string if not present
                 }
 
-                fputcsv($file, $rowData);
+                fputcsv($file, array_map(fn ($value) => $this->escapeCsvValue($value), $rowData));
             }
 
             fclose($file);
@@ -233,5 +235,20 @@ class DownloadRegistrations extends Component
     public function render()
     {
         return view('livewire.auth.download-registrations');
+    }
+
+    private function escapeCsvValue(mixed $value): mixed
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        $trimmed = ltrim($value);
+
+        if ($trimmed !== '' && in_array($trimmed[0], ['=', '+', '-', '@'], true)) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 }

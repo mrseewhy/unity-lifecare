@@ -1,4 +1,4 @@
-<div>
+<div class="min-h-screen">
     {{-- Do your work, then step back. --}}
     @livewire('partials.pagehead', ['title' => 'Careers'])
     <section>

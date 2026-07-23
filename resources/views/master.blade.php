@@ -10,7 +10,6 @@
 
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    @turnstileScripts()
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     
@@ -33,6 +32,5 @@
 
     @vite('resources/js/app.js')
     @livewireScripts
-        <!-- Turnstile Script -->
 </body>
 </html>
